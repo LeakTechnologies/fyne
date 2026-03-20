@@ -23,6 +23,16 @@ const (
 	// Since: 2.0
 	MouseButtonTertiary
 
+	// MouseButton4 is the 4th button on a mouse with additional buttons.
+	//
+	// Since: 2.5
+	MouseButton4
+
+	// MouseButton5 is the 5th button on a mouse with additional buttons.
+	//
+	// Since: 2.5
+	MouseButton5
+
 	// LeftMouseButton is the most common mouse button - on some systems the only one.
 	//
 	// Deprecated: use MouseButtonPrimary which will adapt to mouse configuration.
