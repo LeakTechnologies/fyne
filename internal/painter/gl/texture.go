@@ -157,7 +157,35 @@ func (p *painter) newGlRasterTexture(obj fyne.CanvasObject) Texture {
 	width := p.textureScale(rast.Size().Width)
 	height := p.textureScale(rast.Size().Height)
 
-	return p.imgToTexture(rast.Generator(int(width), int(height)), rast.ScaleMode)
+	img := rast.Generator(int(width), int(height))
+	if img == nil {
+		return noTexture
+	}
+
+	width = p.textureScale(float32(img.Bounds().Dx()))
+	height = p.textureScale(float32(img.Bounds().Dy()))
+
+	if tex, ok := cache.GetTexture(obj); ok {
+		if texObj, ok := img.(*image.RGBA); ok {
+			p.ctx.ActiveTexture(texture0)
+			p.ctx.BindTexture(texture2D, Texture(tex))
+			p.logError()
+			p.ctx.TexSubImage2D(
+				texture2D,
+				0,
+				0, 0,
+				int(width),
+				int(height),
+				colorFormatRGBA,
+				unsignedByte,
+				texObj.Pix,
+			)
+			p.logError()
+			return Texture(tex)
+		}
+	}
+
+	return p.imgToTexture(img, rast.ScaleMode)
 }
 
 func (p *painter) newGlTextTexture(obj fyne.CanvasObject) Texture {
