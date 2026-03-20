@@ -10,9 +10,9 @@ jobs:
       fail-fast: false
       matrix:
         go-version: ["", "stable"]
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu, macos-latest]
         include:
-          - os: ubuntu-latest
+          - os: ubuntu
             runner: xvfb-run
             tags: ci,migrated_fynedo
           - os: macos-latest
@@ -60,7 +60,7 @@ jobs:
         if: ${{ runner.os == 'Linux' && matrix.go-version == 'stable' }}
 
   windows_tests:
-    runs-on: windows-latest
+    runs-on: windows
     strategy:
       fail-fast: false
       matrix:
