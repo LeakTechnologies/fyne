@@ -65,6 +65,21 @@ func (r *Raster) Refresh() {
 	Refresh(r)
 }
 
+// UpdatePixels updates the raster content with new pixel data.
+// This is an efficient way to update video frames without recreating textures.
+// The pixels slice should contain RGBA data of size width * height * 4.
+// Since: 2.7
+func (r *Raster) UpdatePixels(width, height int, pixels []byte) {
+	r.Generator = func(w, h int) image.Image {
+		img := image.NewRGBA(image.Rect(0, 0, width, height))
+		if len(pixels) >= width*height*4 {
+			copy(img.Pix, pixels)
+		}
+		return img
+	}
+	Refresh(r)
+}
+
 // NewRaster returns a new Image instance that is rendered dynamically using
 // the specified generate function.
 // Images returned from this method should draw dynamically to fill the width
