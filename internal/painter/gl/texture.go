@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/draw"
 	"math"
+	"sync"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -17,6 +18,11 @@ import (
 const floatEqualityThreshold = 1e-9
 
 var noTexture = Texture(cache.NoTexture)
+
+// rasterTexDims records the pixel dimensions of the GPU texture created for
+// each Raster object. TexSubImage2D is only valid when the new image fits
+// within the existing texture — AMD GPU drivers crash if it does not.
+var rasterTexDims sync.Map // fyne.CanvasObject → [2]int{width, height}
 
 // Texture represents an uploaded GL texture
 type Texture cache.TextureType
@@ -30,6 +36,7 @@ func (p *painter) freeTexture(obj fyne.CanvasObject) {
 	p.ctx.DeleteTexture(Texture(texture))
 	p.logError()
 	cache.DeleteTexture(obj)
+	rasterTexDims.Delete(obj) // clear stored dims so next upload starts fresh
 }
 
 func (p *painter) getTexture(object fyne.CanvasObject, creator func(canvasObject fyne.CanvasObject) Texture) (Texture, error) {
@@ -167,24 +174,37 @@ func (p *painter) newGlRasterTexture(obj fyne.CanvasObject) Texture {
 
 	if tex, ok := cache.GetTexture(obj); ok {
 		if texObj, ok := img.(*image.RGBA); ok {
-			p.ctx.ActiveTexture(texture0)
-			p.ctx.BindTexture(texture2D, Texture(tex))
-			p.logError()
-			p.ctx.TexSubImage2D(
-				texture2D,
-				0,
-				0, 0,
-				int(width),
-				int(height),
-				colorFormatRGBA,
-				unsignedByte,
-				texObj.Pix,
-			)
-			p.logError()
-			return Texture(tex)
+			// Only use TexSubImage2D when the new image fits within the
+			// existing GPU texture. AMD GPU drivers generate GL_INVALID_VALUE
+			// (and may crash) if the new dimensions exceed the texture size.
+			canReuse := false
+			if stored, ok := rasterTexDims.Load(obj); ok {
+				dims := stored.([2]int)
+				canReuse = int(width) <= dims[0] && int(height) <= dims[1]
+			}
+			if canReuse {
+				p.ctx.ActiveTexture(texture0)
+				p.ctx.BindTexture(texture2D, Texture(tex))
+				p.logError()
+				p.ctx.TexSubImage2D(
+					texture2D,
+					0,
+					0, 0,
+					int(width),
+					int(height),
+					colorFormatRGBA,
+					unsignedByte,
+					texObj.Pix,
+				)
+				p.logError()
+				return Texture(tex)
+			}
 		}
 	}
 
+	// Full texture upload — record dimensions so future TexSubImage2D calls
+	// can verify they fit within the allocated texture.
+	rasterTexDims.Store(obj, [2]int{int(width), int(height)})
 	return p.imgToTexture(img, rast.ScaleMode)
 }
 
