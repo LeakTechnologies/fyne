@@ -181,12 +181,10 @@ func (p *painter) newGlRasterTexture(obj fyne.CanvasObject) Texture {
 				texObj.Pix,
 			)
 			p.logError()
-			fyne.LogDEBUG("glRaster: TexSubImage2D texture=%d size=%dx%d (reused)", tex, width, height)
 			return Texture(tex)
 		}
 	}
 
-	fyne.LogDEBUG("glRaster: TexImage2D size=%dx%d (new texture)", width, height)
 	return p.imgToTexture(img, rast.ScaleMode)
 }
 
