@@ -77,13 +77,42 @@ func lookupRuneFont(r rune, family string, aspect font.Aspect) *font.Face {
 	return fm.ResolveFace(r)
 }
 
+// auxiliaryFont is an optional supplementary font injected after the primary in every face stack.
+// Characters not found in the primary font are tried here before system fallbacks.
+// Use SetAuxiliaryFont to set/clear it; call ClearFontCache() afterwards to rebuild cached faces.
+var (
+	auxiliaryFont   fyne.Resource
+	auxiliaryFontMu sync.Mutex
+)
+
+// SetAuxiliaryFont registers a supplementary font resource added after the primary font in every
+// face stack. Pass nil to clear it. You must call ClearFontCache() after changing this so that
+// previously cached face lists are rebuilt with the new auxiliary font.
+func SetAuxiliaryFont(r fyne.Resource) {
+	auxiliaryFontMu.Lock()
+	auxiliaryFont = r
+	auxiliaryFontMu.Unlock()
+}
+
 func lookupFaces(theme, fallback, emoji fyne.Resource, family string, style fyne.TextStyle) (faces *dynamicFontMap) {
 	f1 := loadMeasureFont(theme)
-	if theme == fallback {
-		faces = &dynamicFontMap{family: family, faces: []*font.Face{f1}}
-	} else {
+	faces = &dynamicFontMap{family: family, faces: []*font.Face{f1}}
+
+	// Inject auxiliary font (e.g. Aboriginal Sans for UCAS syllabics) immediately after
+	// the primary. This ensures the primary font handles all characters it supports
+	// (e.g. IBM Plex Mono for Latin) while the auxiliary covers any gaps (UCAS).
+	auxiliaryFontMu.Lock()
+	aux := auxiliaryFont
+	auxiliaryFontMu.Unlock()
+	if aux != nil {
+		if auxFace := loadMeasureFont(aux); auxFace != nil {
+			faces.addFace(auxFace)
+		}
+	}
+
+	if theme != fallback {
 		f2 := loadMeasureFont(fallback)
-		faces = &dynamicFontMap{family: family, faces: []*font.Face{f1, f2}}
+		faces.addFace(f2)
 	}
 
 	aspect := font.Aspect{Style: font.StyleNormal}
