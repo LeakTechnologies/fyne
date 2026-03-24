@@ -64,7 +64,7 @@ func lookupLangFont(family string, aspect font.Aspect) *font.Face {
 	// Blocking it here prevents the system font scanner from injecting it into
 	// the face stack for non-Inuktitut locales, which would cause it to bleed
 	// into English/French text when IBM Plex Mono lacks a symbol glyph.
-	if f != nil && strings.Contains(f.Family.Name, "Aboriginal") {
+	if f != nil && strings.Contains(f.Font.Describe().Family, "Aboriginal") {
 		return nil
 	}
 	return f
@@ -85,7 +85,7 @@ func lookupRuneFont(r rune, family string, aspect font.Aspect) *font.Face {
 	f := fm.ResolveFace(r)
 	// Same guard as lookupLangFont — Aboriginal Sans must only enter the face
 	// stack when explicitly set as auxiliary via SetAuxiliaryFont.
-	if f != nil && strings.Contains(f.Family.Name, "Aboriginal") {
+	if f != nil && strings.Contains(f.Font.Describe().Family, "Aboriginal") {
 		return nil
 	}
 	return f
