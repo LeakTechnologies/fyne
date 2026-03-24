@@ -59,7 +59,15 @@ func lookupLangFont(family string, aspect font.Aspect) *font.Face {
 
 	fm.SetQuery(fontscan.Query{Families: []string{family}, Aspect: aspect})
 	l, _ := language.NewLangID(language.Language(lang.SystemLocale().LanguageString()))
-	return fm.ResolveFaceForLang(l)
+	f := fm.ResolveFaceForLang(l)
+	// Aboriginal Sans is managed exclusively via SetAuxiliaryFont (Inuktitut mode).
+	// Blocking it here prevents the system font scanner from injecting it into
+	// the face stack for non-Inuktitut locales, which would cause it to bleed
+	// into English/French text when IBM Plex Mono lacks a symbol glyph.
+	if f != nil && strings.Contains(f.Family.Name, "Aboriginal") {
+		return nil
+	}
+	return f
 }
 
 func lookupRuneFont(r rune, family string, aspect font.Aspect) *font.Face {
@@ -74,7 +82,13 @@ func lookupRuneFont(r rune, family string, aspect font.Aspect) *font.Face {
 	}
 
 	fm.SetQuery(fontscan.Query{Families: []string{family}, Aspect: aspect})
-	return fm.ResolveFace(r)
+	f := fm.ResolveFace(r)
+	// Same guard as lookupLangFont — Aboriginal Sans must only enter the face
+	// stack when explicitly set as auxiliary via SetAuxiliaryFont.
+	if f != nil && strings.Contains(f.Family.Name, "Aboriginal") {
+		return nil
+	}
+	return f
 }
 
 // auxiliaryFont is an optional supplementary font injected after the primary in every face stack.
