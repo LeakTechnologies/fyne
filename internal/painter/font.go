@@ -99,6 +99,12 @@ var (
 	auxiliaryFontMu sync.Mutex
 )
 
+// FontCacheDebugCallback is an optional hook called the first time a face list is built for a
+// given (styleName, fontResourceName) pair. Set it before the first render for diagnostics.
+// styleName is "regular", "bold", "italic", "bold+italic", or "monospace".
+// fontResourceName is the Name() of the theme font resource used as faces[0].
+var FontCacheDebugCallback func(styleName, fontResourceName string)
+
 // SetAuxiliaryFont registers a supplementary font resource added after the primary font in every
 // face stack. Pass nil to clear it. You must call ClearFontCache() after changing this so that
 // previously cached face lists are rebuilt with the new auxiliary font.
@@ -182,14 +188,18 @@ func CachedFontFace(style fyne.TextStyle, source fyne.Resource, o fyne.CanvasObj
 		switch {
 		case style.Monospace:
 			faces = lookupFaces(font1, theme.DefaultTextMonospaceFont(), emoji, fontscan.Monospace, style)
+			debugFontCacheBuild("monospace", font1)
 		case style.Bold:
 			if style.Italic {
 				faces = lookupFaces(font1, theme.DefaultTextBoldItalicFont(), emoji, fontscan.SansSerif, style)
+				debugFontCacheBuild("bold+italic", font1)
 			} else {
 				faces = lookupFaces(font1, theme.DefaultTextBoldFont(), emoji, fontscan.SansSerif, style)
+				debugFontCacheBuild("bold", font1)
 			}
 		case style.Italic:
 			faces = lookupFaces(font1, theme.DefaultTextItalicFont(), emoji, fontscan.SansSerif, style)
+			debugFontCacheBuild("italic", font1)
 		case style.Symbol:
 			th := theme.SymbolFont()
 			fallback := theme.DefaultSymbolFont()
@@ -203,6 +213,7 @@ func CachedFontFace(style fyne.TextStyle, source fyne.Resource, o fyne.CanvasObj
 			}
 		default:
 			faces = lookupFaces(font1, theme.DefaultTextFont(), emoji, fontscan.SansSerif, style)
+			debugFontCacheBuild("regular", font1)
 		}
 
 		val = &FontCacheItem{Fonts: faces}
@@ -429,4 +440,18 @@ func (d *dynamicFontMap) ResolveFace(r rune) *font.Face {
 
 func (d *dynamicFontMap) addFace(f *font.Face) {
 	d.faces = append(d.faces, f)
+}
+
+// debugFontCacheBuild fires FontCacheDebugCallback (if set) when a new face list is built.
+// Called once per unique style on cache miss, so it records which font resource became faces[0].
+func debugFontCacheBuild(styleName string, font1 fyne.Resource) {
+	cb := FontCacheDebugCallback
+	if cb == nil {
+		return
+	}
+	name := "<nil>"
+	if font1 != nil {
+		name = font1.Name()
+	}
+	cb(styleName, name)
 }
