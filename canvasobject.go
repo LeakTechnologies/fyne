@@ -56,6 +56,26 @@ type Draggable interface {
 	DragEnd()
 }
 
+// DropTarget can be implemented by a [CanvasObject] that wishes to receive
+// OS-level file drag-and-drop events. When the user drops one or more files
+// onto a DropTarget widget, [DropTarget.Dropped] is called with the canvas
+// position of the drop and the list of dropped URIs.
+//
+// [DropTarget.DraggedOver] and [DropTarget.DraggedOut] are called as the
+// cursor moves over and away from the widget during an OS drag operation,
+// allowing the widget to render visual feedback while the drag is in
+// progress.
+//
+// Since: 2.7
+type DropTarget interface {
+	// Dropped is called when one or more files are dropped onto this widget.
+	Dropped(pos Position, items []URI)
+	// DraggedOver is called when a drag operation moves over this widget.
+	DraggedOver(pos Position)
+	// DraggedOut is called when a drag operation leaves this widget.
+	DraggedOut()
+}
+
 // Focusable describes any [CanvasObject] that can respond to being focused.
 // It will receive the FocusGained and FocusLost events appropriately.
 // When focused it will also have TypedRune called as text is input and

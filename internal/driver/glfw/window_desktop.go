@@ -139,16 +139,27 @@ func (w *window) CenterOnScreen() {
 func (w *window) SetOnDropped(dropped func(pos fyne.Position, items []fyne.URI)) {
 	w.runOnMainWhenCreated(func() {
 		w.viewport.SetDropCallback(func(win *glfw.Window, names []string) {
-			if dropped == nil {
-				return
-			}
-
 			uris := make([]fyne.URI, len(names))
 			for i, name := range names {
 				uris[i] = storage.NewFileURI(name)
 			}
 
-			dropped(w.mousePos, uris)
+			// Dispatch to the DropTarget widget under the cursor, if any.
+			// This allows individual widgets (e.g. module tiles, drop zones) to
+			// handle OS file drops without relying on the window-level callback.
+			obj, pos, _ := w.findObjectAtPositionMatching(w.canvas, w.mousePos, func(object fyne.CanvasObject) bool {
+				_, ok := object.(fyne.DropTarget)
+				return ok
+			})
+			if target, ok := obj.(fyne.DropTarget); ok {
+				target.Dropped(pos, uris)
+				return
+			}
+
+			// No widget-level handler: fall back to the window-level callback.
+			if dropped != nil {
+				dropped(w.mousePos, uris)
+			}
 		})
 	})
 }
