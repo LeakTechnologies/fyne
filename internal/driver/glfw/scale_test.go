@@ -14,10 +14,10 @@ import (
 
 func TestCalculateDetectedScale(t *testing.T) {
 	lowDPI := calculateDetectedScale(300, 1600)
-	assert.Equal(t, float32(1.1288888), lowDPI)
+	assert.Equal(t, float32(1.25), lowDPI) // 135 DPI → 1.1289 → rounds to 1.25
 
 	hiDPI := calculateDetectedScale(420, 3800)
-	assert.Equal(t, float32(1.9150794), hiDPI)
+	assert.Equal(t, float32(2.0), hiDPI) // 230 DPI → 1.9151 → rounds to 2.0
 }
 
 func TestCalculateDetectedScale_Min(t *testing.T) {

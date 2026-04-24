@@ -26,7 +26,7 @@ func calculateDetectedScale(widthMm, widthPx int) float32 {
 		return 1.0
 	}
 
-	return float32(math.Ceil(float64(scale/scaleRoundStep))) * scaleRoundStep
+	return float32(math.Round(float64(scale/scaleRoundStep))) * scaleRoundStep
 }
 
 func calculateScale(user, system, detected float32) float32 {
