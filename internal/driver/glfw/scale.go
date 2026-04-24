@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	baselineDPI = 120.0
-	scaleEnvKey = "FYNE_SCALE"
-	scaleAuto   = float32(-1.0) // some platforms allow setting auto-scale (linux/BSD)
+	baselineDPI      = 120.0
+	scaleEnvKey      = "FYNE_SCALE"
+	scaleAuto        = float32(-1.0) // some platforms allow setting auto-scale (linux/BSD)
+	scaleRoundStep   = 0.25         // round to nearest quarter for crisp text rendering
 )
 
 func calculateDetectedScale(widthMm, widthPx int) float32 {
@@ -24,7 +25,8 @@ func calculateDetectedScale(widthMm, widthPx int) float32 {
 	if scale < 1.0 {
 		return 1.0
 	}
-	return scale
+
+	return float32(math.Ceil(float64(scale/scaleRoundStep))) * scaleRoundStep
 }
 
 func calculateScale(user, system, detected float32) float32 {
