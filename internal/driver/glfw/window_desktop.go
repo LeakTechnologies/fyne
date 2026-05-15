@@ -5,6 +5,7 @@ package glfw
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"image"
 	_ "image/png" // for the icon
 	"os"
@@ -738,6 +739,14 @@ func (w *window) RescaleContext() {
 	w.canvas.content.Refresh()
 }
 
+var vtDebug = os.Getenv("VT_STARTUP_DEBUG") != ""
+
+func vtDbg(msg string) {
+	if vtDebug {
+		fmt.Fprintln(os.Stderr, "[vt-debug] "+msg)
+	}
+}
+
 func (w *window) create() {
 	if !build.IsWayland {
 		// make the window hidden, we will set it up and then show it later
@@ -766,11 +775,13 @@ func (w *window) create() {
 		pixHeight = 10
 	}
 
+	vtDbg("create: calling glfw.CreateWindow() — if process dies here, GPU driver DLL injection is overflowing the C stack")
 	win, err := glfw.CreateWindow(pixWidth, pixHeight, w.title, nil, nil)
 	if err != nil {
 		w.driver.initFailed("window creation error", err)
 		return
 	}
+	vtDbg("create: glfw.CreateWindow() OK — OpenGL context created")
 
 	w.viewport = win
 	if w.view() == nil { // something went wrong above, it will have been logged
@@ -778,10 +789,12 @@ func (w *window) create() {
 	}
 
 	// run the GL init on the draw thread
+	vtDbg("create: Painter().Init() — loading GL shaders and buffers")
 	w.RunWithContext(func() {
 		w.canvas.SetPainter(gl.NewPainter(w.canvas, w))
 		w.canvas.Painter().Init()
 	})
+	vtDbg("create: Painter().Init() OK")
 
 	w.setDarkMode()
 

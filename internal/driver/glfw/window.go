@@ -143,7 +143,9 @@ func (w *window) Show() {
 
 		if !w.created {
 			w.created = true
+			vtDbg("Show: create() — native Win32 window + WGL context")
 			w.create()
+			vtDbg("Show: create() OK")
 		}
 
 		if w.view() == nil {
@@ -170,9 +172,11 @@ func (w *window) Show() {
 
 		// show top canvas element
 		if content := w.canvas.Content(); content != nil {
+			vtDbg("Show: first repaintWindow()")
 			w.RunWithContext(func() {
 				w.driver.repaintWindow(w)
 			})
+			vtDbg("Show: first repaintWindow() OK")
 		}
 	})
 }
