@@ -1,7 +1,10 @@
 package glfw
 
 import (
+	"fmt"
+	"os"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -13,6 +16,8 @@ import (
 	"fyne.io/fyne/v2/internal/painter"
 	"fyne.io/fyne/v2/internal/scale"
 )
+
+var firstFrameOnce sync.Once
 
 type funcData struct {
 	f    func()
@@ -179,6 +184,9 @@ func (d *gLDriver) runGL() {
 				}
 			}
 
+			firstFrameOnce.Do(func() {
+				fmt.Fprintln(os.Stderr, "[vt-debug] gl-loop: first drawSingleFrame — entering GL paint")
+			})
 			d.animation.TickAnimations()
 			d.drawSingleFrame()
 		}
