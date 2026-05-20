@@ -145,10 +145,20 @@ func (w *window) SetOnDropped(dropped func(pos fyne.Position, items []fyne.URI))
 				uris[i] = storage.NewFileURI(name)
 			}
 
+			// Query the actual cursor position at drop time. When dragging from
+			// another application (e.g. Explorer), w.mousePos is stale because
+			// the Fyne window never received mouse-move events during the drag.
+			// GetCursorPos() returns the true position where the user released.
+			xpos, ypos := win.GetCursorPos()
+			dropPos := fyne.NewPos(
+				scale.ToFyneCoordinate(w.canvas, int(xpos)),
+				scale.ToFyneCoordinate(w.canvas, int(ypos)),
+			)
+
 			// Dispatch to the DropTarget widget under the cursor, if any.
 			// This allows individual widgets (e.g. module tiles, drop zones) to
 			// handle OS file drops without relying on the window-level callback.
-			obj, pos, _ := w.findObjectAtPositionMatching(w.canvas, w.mousePos, func(object fyne.CanvasObject) bool {
+			obj, pos, _ := w.findObjectAtPositionMatching(w.canvas, dropPos, func(object fyne.CanvasObject) bool {
 				_, ok := object.(fyne.DropTarget)
 				return ok
 			})
@@ -159,7 +169,7 @@ func (w *window) SetOnDropped(dropped func(pos fyne.Position, items []fyne.URI))
 
 			// No widget-level handler: fall back to the window-level callback.
 			if dropped != nil {
-				dropped(w.mousePos, uris)
+				dropped(dropPos, uris)
 			}
 		})
 	})
