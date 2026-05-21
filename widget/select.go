@@ -449,6 +449,8 @@ func (s *selectRenderer) updateLabel() {
 	segment.Style.Alignment = s.combo.Alignment
 	if s.combo.Disabled() {
 		segment.Style.ColorName = theme.ColorNameDisabled
+	} else if s.combo.focused {
+		segment.Style.ColorName = theme.ColorNameForegroundOnPrimary
 	} else {
 		segment.Style.ColorName = theme.ColorNameForeground
 	}
