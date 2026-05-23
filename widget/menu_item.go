@@ -353,6 +353,10 @@ func (r *menuItemRenderer) refreshText(text *canvas.Text, shortcut bool) {
 	} else {
 		if shortcut {
 			text.Color = shortcutColor(th)
+		} else if r.i.isActive() {
+			// Active item sits on ColorNameFocus background; use ForegroundOnPrimary
+			// so dark text renders legibly on bright highlight colours like VT_Green.
+			text.Color = th.Color(theme.ColorNameForegroundOnPrimary, v)
 		} else {
 			text.Color = th.Color(theme.ColorNameForeground, v)
 		}
